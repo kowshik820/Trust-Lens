@@ -1,0 +1,28 @@
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+.venv/
+venv/
+env/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+*.pyo
+
+# Node.js
+node_modules/
+
+# Frontend build files
+dist/
+build/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
