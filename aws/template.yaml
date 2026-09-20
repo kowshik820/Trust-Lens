@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TrustLens serverless risk analysis stack
+
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: amazon.nova-lite-v1:0
+  OpenSearchEndpoint:
+    Type: String
+    Default: ''
+  OpenSearchIndex:
+    Type: String
+    Default: trustlens-threats
+  FrontendOrigin:
+    Type: String
+    Default: '*'
+
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 1024
+    Runtime: python3.12
+    Architectures:
+      - x86_64
+    Environment:
+      Variables:
+        AWS_REGION: !Ref AWS::Region
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        ANALYSIS_TABLE_NAME: !Ref AnalysisTable
+        OPENSEARCH_ENDPOINT: !Ref OpenSearchEndpoint
+        OPENSEARCH_INDEX: !Ref OpenSearchIndex
+        ALLOWED_ORIGIN: !Ref FrontendOrigin
+        MAX_INPUT_LENGTH: '10000'
+
+Resources:
+  TrustLensApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref FrontendOrigin
+        AllowHeaders:
+          - content-type
+        AllowMethods:
+          - POST
+          - OPTIONS
+
+  AnalysisFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../backend/
+      Handler: lambda_handler.handler
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:Converse
+                - bedrock:InvokeModel
+              Resource: '*'
+            - Effect: Allow
+              Action:
+                - dynamodb:PutItem
+              Resource: !GetAtt AnalysisTable.Arn
+      Events:
+        Analyze:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TrustLensApi
+            Path: /analyze
+            Method: POST
+        Options:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TrustLensApi
+            Path: /analyze
+            Method: OPTIONS
+
+  AnalysisTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      AttributeDefinitions:
+        - AttributeName: analysis_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: analysis_id
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway URL
+    Value: !Sub https://${TrustLensApi}.execute-api.${AWS::Region}.amazonaws.com
+  AnalysisTableName:
+    Value: !Ref AnalysisTable

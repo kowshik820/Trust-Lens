@@ -3,17 +3,24 @@
 ```text
 User
   ↓
-React frontend
+React frontend (S3 or Amplify)
   ↓
 API Gateway
   ↓
-AWS Lambda
+AWS Lambda (backend/lambda_handler.py)
   ↓
-TrustLens analysis engine
+Strands-compatible TrustLens agent
+  ├── URL analysis tool
+  ├── email analysis tool
+  ├── job scam analysis tool
+  ├── optional OpenSearch threat lookup
+  └── Cedar safety policy artifact
   ↓
 Amazon Bedrock
   ↓
-DynamoDB
+Risk score + explanation
+  ↓
+DynamoDB analysis receipt
 ```
 
 ## Frontend hosting
@@ -30,3 +37,15 @@ DynamoDB
 
 - FastAPI runs locally instead of Lambda + API Gateway during development and testing
 - This keeps the project usable before deployment
+
+## Deployment
+
+The deployable baseline is [template.yaml](template.yaml). It provisions API Gateway,
+Lambda, DynamoDB, IAM permissions for Bedrock, and CORS. OpenSearch is supplied as an
+existing endpoint through the `OpenSearchEndpoint` parameter because production
+OpenSearch Serverless requires account-specific network and encryption policies.
+
+```powershell
+sam build --template-file aws/template.yaml
+sam deploy --guided --template-file .aws-sam/build/template.yaml
+```

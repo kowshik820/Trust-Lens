@@ -12,7 +12,11 @@ The app helps users identify common scam indicators such as urgency, payment dem
 
 - frontend/ - React + Vite user interface
 - backend/ - FastAPI API and analysis services
-- aws/ - AWS deployment notes and architecture documentation
+- aws/ - AWS SAM infrastructure, Cedar policy, deployment notes, and architecture documentation
+
+The AWS deployment path includes API Gateway, Lambda, a Strands-compatible agent boundary,
+Amazon Bedrock, optional OpenSearch threat lookup, Cedar safety policy, and DynamoDB analysis
+receipts. FastAPI remains the local development adapter.
 
 ## Local setup
 
@@ -58,6 +62,22 @@ VITE_API_BASE_URL=http://localhost:8001
 ```
 
 On production or staging, point this to your deployed backend URL instead.
+
+## AWS serverless deployment
+
+Install the AWS SAM CLI, then from the repository root run:
+
+```powershell
+sam build --template-file aws/template.yaml
+sam deploy --guided --template-file .aws-sam/build/template.yaml
+```
+
+Use `amazon.nova-lite-v1:0` for `BedrockModelId`. Set `FrontendOrigin` to the deployed
+frontend URL. The stack creates the API Gateway endpoint and DynamoDB table. Supply an
+existing OpenSearch endpoint through `OpenSearchEndpoint` when threat lookup is ready.
+
+The AWS account must have Bedrock model authorization and the deploying identity must be
+allowed to use `bedrock:Converse` and `bedrock:InvokeModel`.
 
 ## Security notes
 

@@ -1,6 +1,8 @@
 fastapi
 uvicorn
 boto3
+strands-agents
+opensearch-py
 python-dotenv
 pydantic
 httpx
